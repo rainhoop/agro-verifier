@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest==9.2.0
+fonttools==4.67.0
+brotli==1.2.1
