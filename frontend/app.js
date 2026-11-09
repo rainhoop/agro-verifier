@@ -25,6 +25,9 @@
   const REDUCED_MOTION =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const COARSE_POINTER =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
 
   const state = {
     lang: "ru",
@@ -939,7 +942,11 @@
   function onMapMouseMove(event) {
     if (!state.mode) return;
     if (state.mode === "polygon") {
-      updateCursorLine(event.latlng);
+      if (COARSE_POINTER) {
+        clearCursorLine();
+      } else {
+        updateCursorLine(event.latlng);
+      }
     } else if (state.mode === "rectangle") {
       updateRectanglePreview(event.latlng);
     }
@@ -1278,6 +1285,7 @@
       return;
     }
     state.points.push(latlng);
+    clearCursorLine();
     if (state.drawHintTimer) {
       window.clearTimeout(state.drawHintTimer);
       state.drawHintTimer = null;
@@ -1374,9 +1382,15 @@
     }
     if (!state.points.length) return;
     state.points.pop();
+    clearCursorLine();
     renderVertexMarkers();
     refreshShapeLayers();
     updateDrawingUI();
+  }
+
+  function clearCursorLine() {
+    if (state.cursorLine && state.map) state.map.removeLayer(state.cursorLine);
+    state.cursorLine = null;
   }
 
   function renderVertexMarkers() {
@@ -1449,6 +1463,7 @@
         lineCap: "round",
         lineJoin: "round",
         interactive: false,
+        className: "drawing-outline",
       });
       state.drawGroup.addLayer(line);
       state.shapeLayers.push(line);
@@ -1460,6 +1475,7 @@
         opacity: 0.9,
         dashArray: "5 5",
         interactive: false,
+        className: "drawing-closing-line",
       });
       state.drawGroup.addLayer(closing);
       state.shapeLayers.push(closing);
@@ -1468,7 +1484,10 @@
   }
 
   function updateCursorLine(latlng) {
-    if (!state.map || !state.points.length) return;
+    if (COARSE_POINTER || !state.map || !state.points.length) {
+      clearCursorLine();
+      return;
+    }
     if (!state.cursorLine) {
       state.cursorLine = L.polyline([], {
         color: "#ffffff",
@@ -1476,6 +1495,7 @@
         opacity: 0.9,
         dashArray: "3 6",
         interactive: false,
+        className: "drawing-cursor-line",
       }).addTo(state.map);
     }
     state.cursorLine.setLatLngs([state.points[state.points.length - 1], latlng]);

@@ -250,7 +250,12 @@ def main() -> None:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             for width, height, label in ((1440, 900, "desktop"), (390, 844, "mobile")):
-                page = browser.new_page(viewport={"width": width, "height": height})
+                mobile = width < 700
+                page = browser.new_page(
+                    viewport={"width": width, "height": height},
+                    is_mobile=mobile,
+                    has_touch=mobile,
+                )
                 page.route("**/api/verify", fulfill_verify)
                 page.route("**/api/geocode**", fulfill_tokyo)
                 demo_field_requests: list[str] = []
@@ -375,6 +380,25 @@ def main() -> None:
                 assert "4" in page.locator("#draw-sheet-count").inner_text()
                 assert page.locator("#map-notice").is_hidden()
                 assert page.locator("#map-hint").is_hidden()
+                closing_path = page.locator(".drawing-closing-line")
+                closing_before_undo = closing_path.get_attribute("d")
+                if width < 700:
+                    assert page.locator(".drawing-cursor-line").count() == 0
+                else:
+                    page.mouse.move(
+                        open_map["x"] + open_map["width"] * 0.95,
+                        open_map["y"] + open_map["height"] * 0.8,
+                    )
+                    page.locator(".drawing-cursor-line").wait_for(state="attached")
+                page.locator("#sheet-undo" if width < 700 else "#undo-point").click()
+                assert page.locator(".vertex-icon").count() == 3
+                assert page.locator(".drawing-cursor-line").count() == 0
+                assert closing_path.get_attribute("d") != closing_before_undo
+                page.mouse.click(
+                    open_map["x"] + open_map["width"] * 0.88,
+                    open_map["y"] + open_map["height"] * 0.46,
+                )
+                assert page.locator(".vertex-icon").count() == 4
                 page.mouse.click(
                     open_map["x"] + open_map["width"] * 0.55,
                     open_map["y"] + open_map["height"] * 0.82,
