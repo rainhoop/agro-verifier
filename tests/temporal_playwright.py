@@ -374,9 +374,10 @@ def main() -> None:
                     )
                 assert "4" in page.locator("#draw-sheet-count").inner_text()
                 assert page.locator("#map-notice").is_hidden()
+                assert page.locator("#map-hint").is_hidden()
                 page.mouse.click(
                     open_map["x"] + open_map["width"] * 0.55,
-                    open_map["y"] + open_map["height"] * 0.85,
+                    open_map["y"] + open_map["height"] * 0.82,
                 )
                 assert "5" in page.locator("#draw-sheet-count").inner_text()
                 assert page.locator("#sheet-finish").is_enabled()
@@ -387,7 +388,35 @@ def main() -> None:
                     "(element) => element.classList.contains('is-drawing')"
                 )
                 if width < 700:
-                    page.locator("#map-hint").wait_for(state="hidden", timeout=8000)
+                    sheet = page.locator("#draw-sheet")
+                    handle = page.locator("#draw-sheet-handle")
+                    sheet_before = _rect(page, "#draw-sheet")
+                    handle_box = _rect(page, "#draw-sheet-handle")
+                    page.mouse.move(
+                        handle_box["x"] + handle_box["width"] / 2,
+                        handle_box["y"] + handle_box["height"] / 2,
+                    )
+                    page.mouse.down()
+                    page.mouse.move(
+                        handle_box["x"] + handle_box["width"] / 2,
+                        handle_box["y"] + handle_box["height"] / 2 + 72,
+                        steps=6,
+                    )
+                    page.mouse.up()
+                    sheet_moved = _rect(page, "#draw-sheet")
+                    assert sheet_moved["y"] >= sheet_before["y"] + 40
+                    assert handle.get_attribute("aria-valuenow") != "0"
+                    handle.focus()
+                    page.keyboard.press("Home")
+                    sheet_reset = _rect(page, "#draw-sheet")
+                    assert abs(sheet_reset["y"] - sheet_before["y"]) <= 1
+                    assert page.locator(".basemap-toggle").is_visible()
+                    assert page.locator(".leaflet-control-attribution").is_visible()
+                    sheet_top = sheet_reset["y"]
+                    for selector in (".basemap-toggle", ".leaflet-control-attribution"):
+                        box = _rect(page, selector)
+                        assert box["y"] + box["height"] <= sheet_top + 2
+                    page.locator("#map-hint").wait_for(state="hidden", timeout=5000)
                 map_box = _rect(page, "#map")
                 center_x = map_box["x"] + map_box["width"] / 2
                 center_y = map_box["y"] + map_box["height"] / 2

@@ -71,6 +71,7 @@
     noticeTimer: null,
     toastTimer: null,
     drawHintTimer: null,
+    drawSheetOffset: 0,
     tileErrorShown: false,
     searchSeq: 0,
     searchTimer: null,
@@ -403,6 +404,7 @@
     finishDraw: $("#finish-draw"),
     cancelDraw: $("#cancel-draw"),
     drawSheet: $("#draw-sheet"),
+    drawSheetHandle: $("#draw-sheet-handle"),
     drawSheetTitle: $("#draw-sheet-title"),
     drawSheetCount: $("#draw-sheet-count"),
     sheetUndo: $("#sheet-undo"),
@@ -616,6 +618,12 @@
     els.sheetUndo.addEventListener("click", undoPoint);
     els.sheetFinish.addEventListener("click", finishDrawing);
     els.sheetCancel.addEventListener("click", () => cancelDrawing());
+    els.drawSheetHandle.addEventListener("pointerdown", startDrawSheetDrag);
+    els.drawSheetHandle.addEventListener("pointermove", moveDrawSheet);
+    els.drawSheetHandle.addEventListener("pointerup", endDrawSheetDrag);
+    els.drawSheetHandle.addEventListener("pointercancel", endDrawSheetDrag);
+    els.drawSheetHandle.addEventListener("click", (event) => event.stopPropagation());
+    els.drawSheetHandle.addEventListener("keydown", onDrawSheetKeydown);
 
     els.cropSelect.addEventListener("change", updateVerifyState);
     els.sowingDate.addEventListener("change", updateVerifyState);
@@ -1165,6 +1173,7 @@
     state.drawnAreaHa = null;
     state.drawnVertices = 0;
     state.mode = mode;
+    state.drawSheetOffset = 0;
     state.points = [];
     state.rectAnchor = null;
     updateDemoStyles();
@@ -1183,10 +1192,11 @@
     state.drawHintTimer = window.setTimeout(() => {
       state.drawHintTimer = null;
       if (state.mode) setHidden(els.mapHint, true);
-    }, 6000);
+    }, 2500);
     hideMapNotice();
     setHidden(els.drawToolbar, false);
     setHidden(els.drawSheet, false);
+    updateDrawSheetPosition();
     setDrawingInputsDisabled(true);
     updateDrawingCard();
     updateVerifyState();
@@ -1211,6 +1221,12 @@
     state.points = [];
     state.rectAnchor = null;
     state.mode = null;
+    state.drawSheetOffset = 0;
+    document.body.style.removeProperty("--draw-sheet-height");
+    document.body.style.removeProperty("--draw-sheet-offset");
+    els.drawSheet.style.transform = "";
+    els.drawSheetHandle.setAttribute("aria-valuenow", "0");
+    els.drawSheetHandle.setAttribute("aria-valuetext", t("map.drawPanelBottom"));
 
     if (state.drawHintTimer) {
       window.clearTimeout(state.drawHintTimer);
@@ -1262,9 +1278,84 @@
       return;
     }
     state.points.push(latlng);
+    if (state.drawHintTimer) {
+      window.clearTimeout(state.drawHintTimer);
+      state.drawHintTimer = null;
+    }
+    setHidden(els.mapHint, true);
     renderVertexMarkers();
     refreshShapeLayers();
     updateDrawingUI();
+  }
+
+  function drawSheetMaxOffset() {
+    const sheetHeight = els.drawSheet.getBoundingClientRect().height;
+    return Math.max(0, Math.min(sheetHeight - 64, window.innerHeight * 0.55));
+  }
+
+  function updateDrawSheetPosition() {
+    if (!els.drawSheet || els.drawSheet.classList.contains("hidden")) return;
+    const maxOffset = drawSheetMaxOffset();
+    state.drawSheetOffset = Math.max(0, Math.min(state.drawSheetOffset, maxOffset));
+    els.drawSheet.style.transform = `translateY(${state.drawSheetOffset}px)`;
+    document.body.style.setProperty(
+      "--draw-sheet-height",
+      `${els.drawSheet.getBoundingClientRect().height}px`
+    );
+    document.body.style.setProperty("--draw-sheet-offset", `${state.drawSheetOffset}px`);
+    const percent = maxOffset ? Math.round((state.drawSheetOffset / maxOffset) * 100) : 0;
+    els.drawSheetHandle.setAttribute("aria-valuenow", String(percent));
+    els.drawSheetHandle.setAttribute(
+      "aria-valuetext",
+      percent === 0
+        ? t("map.drawPanelBottom")
+        : t("map.drawPanelMoved", { percent })
+    );
+  }
+
+  function startDrawSheetDrag(event) {
+    if (!state.mode || event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    els.drawSheetHandle.setPointerCapture(event.pointerId);
+    els.drawSheetHandle.dataset.dragStartY = String(event.clientY);
+    els.drawSheetHandle.dataset.dragStartOffset = String(state.drawSheetOffset);
+    els.drawSheet.classList.add("is-moving");
+  }
+
+  function moveDrawSheet(event) {
+    if (!els.drawSheetHandle.hasPointerCapture(event.pointerId)) return;
+    event.stopPropagation();
+    const startY = Number(els.drawSheetHandle.dataset.dragStartY);
+    const startOffset = Number(els.drawSheetHandle.dataset.dragStartOffset);
+    state.drawSheetOffset = startOffset + event.clientY - startY;
+    updateDrawSheetPosition();
+  }
+
+  function endDrawSheetDrag(event) {
+    if (!els.drawSheetHandle.hasPointerCapture(event.pointerId)) return;
+    event.stopPropagation();
+    els.drawSheetHandle.releasePointerCapture(event.pointerId);
+    els.drawSheet.classList.remove("is-moving");
+  }
+
+  function onDrawSheetKeydown(event) {
+    if (!state.mode) return;
+    const maxOffset = drawSheetMaxOffset();
+    const step = Math.max(24, Math.round(window.innerHeight * 0.05));
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      state.drawSheetOffset += step;
+    } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      state.drawSheetOffset -= step;
+    } else if (event.key === "Home") {
+      state.drawSheetOffset = 0;
+    } else if (event.key === "End") {
+      state.drawSheetOffset = maxOffset;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    updateDrawSheetPosition();
   }
 
   function undoPoint() {

@@ -3029,13 +3029,23 @@ kbd {
     font-size: 8px !important;
   }
 
+  .leaflet-bottom.leaflet-right {
+    bottom: 4px;
+  }
+
+  .basemap-toggle {
+    bottom: 4px;
+  }
+
   .map-hint {
     top: 66px;
     left: 12px;
-    right: 12px;
-    max-width: none;
-    padding: 9px 11px;
-    font-size: 12px;
+    right: auto;
+    width: max-content;
+    max-width: min(230px, calc(100vw - 24px));
+    padding: 7px 9px;
+    font-size: 11px;
+    line-height: 1.4;
   }
 
   .map-notice {
@@ -3070,14 +3080,41 @@ kbd {
     box-shadow: 0 -6px 24px rgba(26, 29, 33, 0.18);
   }
 
-  .draw-sheet::before {
-    content: "";
+  .draw-sheet-handle {
+    display: flex;
+    width: 100%;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    margin: -2px 0 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .draw-sheet-handle:active,
+  .draw-sheet.is-moving .draw-sheet-handle {
+    cursor: grabbing;
+  }
+
+  .draw-sheet-handle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .draw-sheet-handle span {
     display: block;
     width: 36px;
     height: 4px;
-    margin: 0 auto 8px;
     border-radius: 2px;
     background: #d6dadd;
+  }
+
+  .draw-sheet.is-moving {
+    transition: none;
   }
 
   .draw-sheet-head {
@@ -3145,11 +3182,11 @@ kbd {
   }
 
   body.is-drawing .leaflet-bottom.leaflet-right {
-    bottom: calc(142px + env(safe-area-inset-bottom));
+    bottom: calc(var(--draw-sheet-height, 142px) - var(--draw-sheet-offset, 0px) + 8px + env(safe-area-inset-bottom));
   }
 
   body.is-drawing .basemap-toggle {
-    bottom: 150px;
+    bottom: calc(var(--draw-sheet-height, 142px) - var(--draw-sheet-offset, 0px) + 8px + env(safe-area-inset-bottom));
   }
 
   body.is-drawing .map-hint {
