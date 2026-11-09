@@ -416,6 +416,14 @@ def main() -> None:
                     for selector in (".basemap-toggle", ".leaflet-control-attribution"):
                         box = _rect(page, selector)
                         assert box["y"] + box["height"] <= sheet_top + 2
+                    toggle_box = _rect(page, ".basemap-toggle")
+                    attribution_box = _rect(page, ".leaflet-control-attribution")
+                    assert (
+                        attribution_box["x"] + attribution_box["width"] <= toggle_box["x"]
+                        or toggle_box["x"] + toggle_box["width"] <= attribution_box["x"]
+                        or attribution_box["y"] + attribution_box["height"] <= toggle_box["y"]
+                        or toggle_box["y"] + toggle_box["height"] <= attribution_box["y"]
+                    )
                     page.locator("#map-hint").wait_for(state="hidden", timeout=5000)
                 map_box = _rect(page, "#map")
                 center_x = map_box["x"] + map_box["width"] / 2

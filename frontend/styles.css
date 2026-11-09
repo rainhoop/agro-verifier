@@ -3027,6 +3027,7 @@ kbd {
 
   .leaflet-control-attribution {
     font-size: 8px !important;
+    transform: translateY(-46px);
   }
 
   .leaflet-bottom.leaflet-right {
