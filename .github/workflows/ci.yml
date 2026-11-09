@@ -28,5 +28,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Prepare local-only test fixtures
+        run: |
+          mkdir -p mockups
+          python -c "from pathlib import Path; from secrets import token_urlsafe; Path('.env').write_text(f'CDSE_CLIENT_SECRET={token_urlsafe(24)}\nCDSE_CLIENT_ID={token_urlsafe(24)}\n')"
       - name: Run tests
         run: python -m pytest -q
+      - name: Remove local-only test fixtures
+        if: always()
+        run: |
+          rm -f .env
+          rmdir mockups 2>/dev/null || true

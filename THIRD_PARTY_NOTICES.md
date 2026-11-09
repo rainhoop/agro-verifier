@@ -37,6 +37,7 @@
 | joblib | 1.6.0 | BSD-3-Clause |
 | Pydantic | 2.13.5 | MIT |
 | HTTPX | 0.28.1 | BSD-3-Clause |
+| python-multipart | 0.0.32 | Apache-2.0 |
 | pytest | 9.2.0 | MIT |
 | fontTools | 4.67.0 | MIT |
 | Brotli | 1.2.1 | MIT |
