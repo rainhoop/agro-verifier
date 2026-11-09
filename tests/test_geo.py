@@ -71,6 +71,27 @@ def test_self_intersection_is_rejected() -> None:
         geo.validate_polygon(bowtie)
 
 
+def test_valid_polygon_not_rejected_for_provisional_closing_edge() -> None:
+    geometry = {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [70.0, 51.0],
+                [70.02, 51.0],
+                [70.02, 51.02],
+                [70.03, 51.01],
+                [70.0, 51.05],
+                [70.0, 51.0],
+            ]
+        ],
+    }
+
+    rings, area, _center = geo.validate_polygon(geometry)
+
+    assert geo.ring_is_simple(rings[0])
+    assert area == pytest.approx(583.3, abs=1.0)
+
+
 def test_area_limits_are_enforced() -> None:
     with pytest.raises(geo.GeoError, match="below the minimum"):
         geo.validate_polygon(_square(0.001))

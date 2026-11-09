@@ -279,6 +279,19 @@
     return true;
   }
 
+  function polylineIsSimple(points) {
+    for (let first = 0; first < points.length - 1; first += 1) {
+      const a = points[first];
+      const b = points[first + 1];
+      for (let second = first + 2; second < points.length - 1; second += 1) {
+        const c = points[second];
+        const d = points[second + 1];
+        if (segmentsIntersect(a, b, c, d)) return false;
+      }
+    }
+    return true;
+  }
+
   function roundCoordinate(value) {
     return Math.round(value * 1e7) / 1e7;
   }
@@ -1244,7 +1257,7 @@
     const last = state.points[state.points.length - 1];
     if (last && last.distanceTo(latlng) < 2) return;
     const candidate = state.points.concat([latlng]);
-    if (candidate.length >= 4 && !polygonIsSimple(candidate)) {
+    if (candidate.length >= 4 && !polylineIsSimple(candidate)) {
       showMapNotice(t("map.selfIntersect"));
       return;
     }

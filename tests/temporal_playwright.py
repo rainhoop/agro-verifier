@@ -359,6 +359,29 @@ def main() -> None:
                 search.fill("0, 0")
                 search.press("Enter")
 
+                page.locator("#draw-polygon").click()
+                open_map = _rect(page, "#map")
+                open_points = (
+                    (0.55, 0.35),
+                    (0.78, 0.35),
+                    (0.78, 0.56),
+                    (0.88, 0.46),
+                )
+                for x_ratio, y_ratio in open_points:
+                    page.mouse.click(
+                        open_map["x"] + open_map["width"] * x_ratio,
+                        open_map["y"] + open_map["height"] * y_ratio,
+                    )
+                assert "4" in page.locator("#draw-sheet-count").inner_text()
+                assert page.locator("#map-notice").is_hidden()
+                page.mouse.click(
+                    open_map["x"] + open_map["width"] * 0.55,
+                    open_map["y"] + open_map["height"] * 0.85,
+                )
+                assert "5" in page.locator("#draw-sheet-count").inner_text()
+                assert page.locator("#sheet-finish").is_enabled()
+                page.keyboard.press("Escape")
+
                 page.locator("#draw-rectangle").click()
                 assert page.locator("body").evaluate(
                     "(element) => element.classList.contains('is-drawing')"
