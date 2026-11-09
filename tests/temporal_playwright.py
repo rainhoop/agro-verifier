@@ -91,7 +91,8 @@ def _verify_layout(page: Any, width: int) -> None:
               visible: style.display !== 'none' && style.visibility !== 'hidden'
             };
           }
-          return result;
+          return {...result, viewportHeight: window.innerHeight,
+            drawing: document.body.classList.contains('is-drawing')};
         }"""
     )
     zoom = layout[".leaflet-control-zoom"]
@@ -108,6 +109,9 @@ def _verify_layout(page: Any, width: int) -> None:
     temporal = layout["#temporal-panel"]
     if temporal and temporal["visible"]:
         map_stage = layout["#map-stage"]
+        if width < 700 and not layout["drawing"]:
+            expected_height = min(420, max(300, layout["viewportHeight"] * 0.46))
+            assert map_stage["height"] >= expected_height - 1
         assert map_stage["y"] + map_stage["height"] <= temporal["y"] + 1
         legend = layout["#temporal-legend"]
         assert not _overlap(zoom, legend)
@@ -359,6 +363,8 @@ def main() -> None:
                 assert page.locator("body").evaluate(
                     "(element) => element.classList.contains('is-drawing')"
                 )
+                if width < 700:
+                    page.locator("#map-hint").wait_for(state="hidden", timeout=8000)
                 map_box = _rect(page, "#map")
                 center_x = map_box["x"] + map_box["width"] / 2
                 center_y = map_box["y"] + map_box["height"] / 2

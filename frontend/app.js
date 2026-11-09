@@ -70,6 +70,7 @@
     verifySeq: 0,
     noticeTimer: null,
     toastTimer: null,
+    drawHintTimer: null,
     tileErrorShown: false,
     searchSeq: 0,
     searchTimer: null,
@@ -1165,6 +1166,11 @@
     els.drawRectangle.classList.toggle("active", mode === "rectangle");
     els.mapHint.textContent = t(mode === "polygon" ? "map.drawHint" : "map.rectHint");
     setHidden(els.mapHint, false);
+    if (state.drawHintTimer) window.clearTimeout(state.drawHintTimer);
+    state.drawHintTimer = window.setTimeout(() => {
+      state.drawHintTimer = null;
+      if (state.mode) setHidden(els.mapHint, true);
+    }, 6000);
     hideMapNotice();
     setHidden(els.drawToolbar, false);
     setHidden(els.drawSheet, false);
@@ -1193,6 +1199,10 @@
     state.rectAnchor = null;
     state.mode = null;
 
+    if (state.drawHintTimer) {
+      window.clearTimeout(state.drawHintTimer);
+      state.drawHintTimer = null;
+    }
     document.body.classList.remove("is-drawing");
     if (state.map) {
       state.map.getContainer().classList.remove("drawing");
