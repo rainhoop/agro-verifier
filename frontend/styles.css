@@ -521,28 +521,33 @@ a {
 }
 
 .field-secondary-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 28px;
-  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .demo-link,
 .clear-link {
-  padding: 3px 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted-2);
-  font-size: 11px;
-  text-decoration: underline;
-  text-decoration-color: var(--line-strong);
-  text-underline-offset: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: center;
 }
 
 .demo-link:hover,
 .clear-link:hover {
-  color: var(--ink-2);
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
 }
 
 .region-warning {
@@ -2947,6 +2952,12 @@ kbd {
   }
 
   .tool-button {
+    min-height: 46px;
+    font-size: 13px;
+  }
+
+  .demo-link,
+  .clear-link {
     min-height: 46px;
     font-size: 13px;
   }
