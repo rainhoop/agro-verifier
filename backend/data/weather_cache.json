@@ -1,0 +1,322 @@
+{
+  "meta": {
+    "description": "Open-Meteo 2026 season summaries for AgroVerifier demo fields. Climate-norm estimates are not cached.",
+    "updated_at": "2026-11-09T13:32:23.404438+00:00"
+  },
+  "entries": {
+    "53.920,69.600:2026-04-01:2026-10-18": {
+      "precipitation_mm": 311.2,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 141.5,
+      "temperature_mean_c": 16.5,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:36:41.990210+00:00"
+    },
+    "51.960,66.400:2026-04-01:2026-10-18": {
+      "precipitation_mm": 259.5,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 118.0,
+      "temperature_mean_c": 17.1,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:36:42.404387+00:00"
+    },
+    "51.660,71.180:2026-04-01:2026-10-18": {
+      "precipitation_mm": 256.3,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 116.5,
+      "temperature_mean_c": 16.4,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:36:42.833545+00:00"
+    },
+    "54.950,69.000:2026-04-01:2026-10-18": {
+      "precipitation_mm": 391.9,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 178.1,
+      "temperature_mean_c": 16.2,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:36:43.227950+00:00"
+    },
+    "51.900,71.020:2026-04-01:2026-10-18": {
+      "precipitation_mm": 266.1,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 121.0,
+      "temperature_mean_c": 16.3,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:36:43.634499+00:00"
+    },
+    "51.880,66.580:2026-04-01:2026-10-18": {
+      "precipitation_mm": 300.4,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 136.5,
+      "temperature_mean_c": 16.9,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:36:44.021664+00:00"
+    },
+    "53.904,70.427:2026-04-01:2026-10-18": {
+      "precipitation_mm": 271.4,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 123.4,
+      "temperature_mean_c": 16.8,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:55:08.164739+00:00"
+    },
+    "51.869,71.978:2026-04-01:2026-10-18": {
+      "precipitation_mm": 236.4,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 107.5,
+      "temperature_mean_c": 16.8,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-08T08:59:48.504956+00:00"
+    },
+    "53.913,69.580:2026-04-01:2026-10-18": {
+      "precipitation_mm": 311.2,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 141.5,
+      "temperature_mean_c": 16.5,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T06:35:43.081846+00:00"
+    },
+    "53.913,69.453:2026-04-01:2026-10-18": {
+      "precipitation_mm": 306.3,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 139.2,
+      "temperature_mean_c": 16.6,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T12:03:17.968110+00:00"
+    },
+    "54.126,68.813:2026-04-01:2026-10-18": {
+      "precipitation_mm": 353.9,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 160.9,
+      "temperature_mean_c": 16.5,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T12:27:16.031657+00:00"
+    },
+    "52.356,66.246:2026-04-01:2026-10-18": {
+      "precipitation_mm": 290.6,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 132.1,
+      "temperature_mean_c": 16.9,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T12:35:55.603445+00:00"
+    },
+    "51.860,70.880:2026-04-01:2026-10-18": {
+      "precipitation_mm": 289.7,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 131.7,
+      "temperature_mean_c": 16.3,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T12:37:25.089253+00:00"
+    },
+    "51.890,66.545:2026-04-01:2026-10-18": {
+      "precipitation_mm": 300.4,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 136.5,
+      "temperature_mean_c": 16.9,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T12:57:29.054934+00:00"
+    },
+    "53.650,67.400:2026-04-01:2026-10-18": {
+      "precipitation_mm": 264.3,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 120.1,
+      "temperature_mean_c": 16.7,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T13:02:45.519738+00:00"
+    },
+    "51.926,69.952:2026-04-01:2026-10-18": {
+      "precipitation_mm": 264.1,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 120.0,
+      "temperature_mean_c": 16.5,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T13:20:13.293370+00:00"
+    },
+    "51.200,70.400:2026-04-01:2026-10-18": {
+      "precipitation_mm": 203.4,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 92.5,
+      "temperature_mean_c": 17.3,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T13:29:30.575314+00:00"
+    },
+    "54.132,68.529:2026-04-11:2026-10-18": {
+      "precipitation_mm": 351.4,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 159.7,
+      "temperature_mean_c": 16.9,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-11",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T13:31:12.685411+00:00"
+    },
+    "54.109,68.544:2026-04-01:2026-10-18": {
+      "precipitation_mm": 358.3,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 162.9,
+      "temperature_mean_c": 16.5,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T13:31:45.687614+00:00"
+    },
+    "54.193,68.886:2026-04-01:2026-10-18": {
+      "precipitation_mm": 345.6,
+      "norm_precipitation_mm": 220.0,
+      "precipitation_index": 157.1,
+      "temperature_mean_c": 16.6,
+      "norm_temperature_c": 15.5,
+      "source": "open-meteo",
+      "synthetic": false,
+      "estimated": false,
+      "cached": false,
+      "period": {
+        "start": "2026-04-01",
+        "end": "2026-10-18"
+      },
+      "fetched_at": "2026-11-09T13:32:23.404055+00:00"
+    }
+  }
+}

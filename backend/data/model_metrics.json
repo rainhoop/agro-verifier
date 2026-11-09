@@ -1,0 +1,67 @@
+{
+  "accuracy": 0.825,
+  "labels": [
+    "bare",
+    "barley",
+    "double_wave",
+    "rapso",
+    "sunflower",
+    "wheat"
+  ],
+  "confusion_matrix": [
+    [
+      60,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      44,
+      0,
+      15,
+      0,
+      1
+    ],
+    [
+      0,
+      1,
+      56,
+      0,
+      3,
+      0
+    ],
+    [
+      0,
+      18,
+      0,
+      41,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      54,
+      6
+    ],
+    [
+      0,
+      3,
+      0,
+      5,
+      10,
+      42
+    ]
+  ],
+  "n_samples": 1800,
+  "n_train": 1440,
+  "n_test": 360,
+  "dataset": "synthetic",
+  "validation": "hold-out from synthetic generator; not validated on real fields",
+  "trained_at": "2026-11-09T11:29:09.671993+00:00"
+}

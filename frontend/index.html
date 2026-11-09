@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F7F8">
+  <meta name="description" content="АгроВерификатор — проверка заявленного посева по данным Sentinel-2 L2A.">
+  <title>АгроВерификатор — проверка посевов</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23F6F7F8'/%3E%3Crect x='5' y='5' width='5' height='5' rx='1.2' fill='%23A8CD8B'/%3E%3Crect x='11' y='5' width='5' height='5' rx='1.2' fill='%2386BC70'/%3E%3Crect x='17' y='5' width='5' height='5' rx='1.2' fill='%235EA45D'/%3E%3Crect x='23' y='5' width='5' height='5' rx='1.2' fill='%23E7B84B'/%3E%3Crect x='5' y='11' width='5' height='5' rx='1.2' fill='%23B9D79D'/%3E%3Crect x='11' y='11' width='5' height='5' rx='1.2' fill='%2399C87F'/%3E%3Crect x='17' y='11' width='5' height='5' rx='1.2' fill='%2371B368'/%3E%3Crect x='23' y='11' width='5' height='5' rx='1.2' fill='%233B8B5B'/%3E%3Crect x='5' y='17' width='5' height='5' rx='1.2' fill='%23CBE1B5'/%3E%3Crect x='11' y='17' width='5' height='5' rx='1.2' fill='%23ADD590'/%3E%3Crect x='17' y='17' width='5' height='5' rx='1.2' fill='%2386BC70'/%3E%3Crect x='23' y='17' width='5' height='5' rx='1.2' fill='%235EA45D'/%3E%3Crect x='5' y='23' width='5' height='5' rx='1.2' fill='%23DCE9CB'/%3E%3Crect x='11' y='23' width='5' height='5' rx='1.2' fill='%23C5DFAA'/%3E%3Crect x='17' y='23' width='5' height='5' rx='1.2' fill='%23A8CD8B'/%3E%3Crect x='23' y='23' width='5' height='5' rx='1.2' fill='%2386BC70'/%3E%3Cpath d='m24.6 7.9 1.1 1.1 1.9-2.1' fill='none' stroke='%231A1D21' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/vendor/leaflet.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#map">К карте</a>
+
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-draw" viewBox="0 0 24 24">
+      <path d="M12 3 5 6.5v6.2c0 4.3 2.9 7.5 7 8.8 4.1-1.3 7-4.5 7-8.8V6.5L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M12 7.5v4.9M9.6 10h4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-rect" viewBox="0 0 24 24">
+      <path d="M4 6.5h16v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3.2 2.6"/>
+      <path d="M4 6.5h16v11H4z" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    </symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24">
+      <path d="M4 6h2M9 6h11M4 12h2M9 12h11M4 18h2M9 18h11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24">
+      <path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="5.8" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      <path d="m15 15 4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24">
+      <path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-upload" viewBox="0 0 24 24">
+      <path d="M12 19V8m0 0 4 4m-4-4-4 4M5 5h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24">
+      <path d="M19 8a7.5 7.5 0 1 0 .4 7.7M19 4.5V8h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M12 11v6M12 7.7h.01" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-satellite" viewBox="0 0 24 24">
+      <path d="m9 15 6-6M7.2 13.2 5 15.4a2.8 2.8 0 0 0 4 4l2.2-2.2M16.8 10.8 19 8.6a2.8 2.8 0 0 0-4-4l-2.2 2.2M3.5 8.5 8 4M16 20l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="12" cy="12" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.2 4L19 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </svg>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="АгроВерификатор — на главный экран">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <rect x="2" y="2" width="5.4" height="5.4" rx="1.3" fill="#A8CD8B"/>
+            <rect x="9.2" y="2" width="5.4" height="5.4" rx="1.3" fill="#86BC70"/>
+            <rect x="16.4" y="2" width="5.4" height="5.4" rx="1.3" fill="#5EA45D"/>
+            <rect x="23.6" y="2" width="5.4" height="5.4" rx="1.3" fill="#E7B84B"/>
+            <rect x="2" y="9.2" width="5.4" height="5.4" rx="1.3" fill="#B9D79D"/>
+            <rect x="9.2" y="9.2" width="5.4" height="5.4" rx="1.3" fill="#99C87F"/>
+            <rect x="16.4" y="9.2" width="5.4" height="5.4" rx="1.3" fill="#71B368"/>
+            <rect x="23.6" y="9.2" width="5.4" height="5.4" rx="1.3" fill="#3B8B5B"/>
+            <rect x="2" y="16.4" width="5.4" height="5.4" rx="1.3" fill="#CBE1B5"/>
+            <rect x="9.2" y="16.4" width="5.4" height="5.4" rx="1.3" fill="#ADD590"/>
+            <rect x="16.4" y="16.4" width="5.4" height="5.4" rx="1.3" fill="#86BC70"/>
+            <rect x="23.6" y="16.4" width="5.4" height="5.4" rx="1.3" fill="#5EA45D"/>
+            <rect x="2" y="23.6" width="5.4" height="5.4" rx="1.3" fill="#DCE9CB"/>
+            <rect x="9.2" y="23.6" width="5.4" height="5.4" rx="1.3" fill="#C5DFAA"/>
+            <rect x="16.4" y="23.6" width="5.4" height="5.4" rx="1.3" fill="#A8CD8B"/>
+            <rect x="23.6" y="23.6" width="5.4" height="5.4" rx="1.3" fill="#86BC70"/>
+            <path d="m25.4 5.1 1 1.1 1.7-2" fill="none" stroke="#1A1D21" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-name" data-i18n="brand">АгроВерификатор</span>
+      </a>
+
+      <nav class="main-tabs" role="tablist" aria-label="Разделы">
+        <button type="button" class="tab active" id="tab-button-check" data-tab="check" role="tab" aria-selected="true" aria-controls="tab-check">
+          <span data-i18n="nav.check">Проверка</span>
+        </button>
+        <button type="button" class="tab" id="tab-button-portfolio" data-tab="portfolio" role="tab" aria-selected="false" aria-controls="tab-portfolio">
+          <span data-i18n="nav.portfolio">Портфель</span>
+        </button>
+      </nav>
+
+      <div class="header-right">
+        <div class="lang-switch" role="group" aria-label="Язык интерфейса">
+          <button type="button" data-lang="ru" class="active" aria-pressed="true">РУС</button>
+          <button type="button" data-lang="kz" aria-pressed="false">ҚАЗ</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main">
+    <section id="tab-check" class="tab-panel active" role="tabpanel" aria-labelledby="tab-button-check">
+      <div class="check-layout">
+        <aside class="side-panel" id="side-panel" aria-label="Панель проверки поля">
+          <section class="step-block">
+            <div class="step-head">
+              <span class="step-number" aria-hidden="true">1</span>
+              <h2 data-i18n="step.field">Поле</h2>
+            </div>
+
+            <div id="field-card" class="field-card is-empty">
+              <div class="field-card-top">
+                <strong id="field-name" data-i18n="field.none">Поле не выбрано</strong>
+                <span id="field-source" class="source-chip hidden"></span>
+              </div>
+              <p id="field-meta" class="field-meta" data-i18n="field.noneHint">Выберите демо-поле или нарисуйте контур на карте.</p>
+              <p id="field-honesty" class="field-honesty hidden"></p>
+              <div id="field-error" class="field-error hidden" role="alert"></div>
+            </div>
+
+            <div class="action-grid">
+              <button type="button" class="tool-button" id="draw-polygon">
+                <svg class="icon" aria-hidden="true"><use href="#icon-draw"></use></svg>
+                <span data-i18n="action.draw">Нарисовать контур</span>
+              </button>
+              <button type="button" class="tool-button" id="draw-rectangle">
+                <svg class="icon" aria-hidden="true"><use href="#icon-rect"></use></svg>
+                <span data-i18n="action.rect">Прямоугольник</span>
+              </button>
+            </div>
+
+            <div class="field-secondary-actions">
+              <button type="button" class="demo-link" id="demo-toggle" aria-expanded="false" aria-controls="demo-panel" data-i18n="demo.load">Загрузить пример</button>
+              <button type="button" class="clear-link hidden" id="clear-field" data-i18n="action.clear">Очистить</button>
+            </div>
+
+            <div id="demo-panel" class="demo-panel hidden">
+              <div class="demo-panel-head">
+                <div>
+                  <strong data-i18n="demo.title">Демо-поля</strong>
+                  <p data-i18n="demo.note">Контур и заявка условные. Истинная культура неизвестна.</p>
+                </div>
+                <button type="button" class="icon-button" id="demo-close" data-i18n-aria-label="demo.close" aria-label="Скрыть демо-поля">
+                  <svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg>
+                </button>
+              </div>
+              <div id="demo-list" class="demo-list" aria-live="polite"></div>
+            </div>
+
+            <p class="shortcut-hint">
+              <kbd>Esc</kbd> — <span data-i18n="action.cancel">Отмена</span>
+              <span class="shortcut-sep">·</span>
+              <kbd>Enter</kbd> — <span data-i18n="action.finish">Готово</span>
+              <span class="shortcut-sep">·</span>
+              <kbd>Backspace</kbd> — <span data-i18n="action.undo">Отменить точку</span>
+            </p>
+          </section>
+
+          <section class="step-block">
+            <div class="step-head">
+              <span class="step-number" aria-hidden="true">2</span>
+              <h2 data-i18n="step.params">Параметры</h2>
+            </div>
+            <form id="verify-form" novalidate>
+              <div class="params-grid">
+                <label class="field-label" for="crop-select">
+                  <span data-i18n="params.crop">Заявленная культура</span>
+                  <span class="select-wrap">
+                    <select id="crop-select" name="crop" required>
+                      <option value="wheat" data-i18n="crop.wheat">Пшеница яровая</option>
+                      <option value="barley" data-i18n="crop.barley">Ячмень</option>
+                      <option value="sunflower" data-i18n="crop.sunflower">Подсолнечник</option>
+                      <option value="rapso" data-i18n="crop.rapso">Рапс</option>
+                    </select>
+                    <svg class="select-chevron" aria-hidden="true"><use href="#icon-chevron"></use></svg>
+                  </span>
+                </label>
+                <label class="field-label" for="sowing-date">
+                  <span data-i18n="params.date">Дата сева</span>
+                  <input id="sowing-date" name="sowing_date" type="date" value="2026-05-15" min="2020-01-01" max="2030-12-31" required>
+                </label>
+              </div>
+              <button type="submit" class="primary-button" id="verify-button" disabled>
+                <span class="spinner small hidden" id="verify-spinner" aria-hidden="true"></span>
+                <span data-i18n="params.verify">Проверить</span>
+              </button>
+              <p class="params-note" data-i18n="params.note">Проверка использует сезонный NDVI, форму эталона и ML-модель.</p>
+            </form>
+          </section>
+
+          <section class="step-block result-step" id="result-step" aria-live="polite" aria-busy="false">
+            <div class="step-head">
+              <span class="step-number" aria-hidden="true">3</span>
+              <h2 data-i18n="step.result">Результат</h2>
+            </div>
+
+            <div class="result-tabs" role="tablist" aria-label="Результат и помощник">
+              <button type="button" class="result-tab active" id="result-view-button" data-result-view="result" role="tab" aria-selected="true" aria-controls="result-view" data-i18n="chat.resultTab">Результат</button>
+              <button type="button" class="result-tab" id="assistant-view-button" data-result-view="assistant" role="tab" aria-selected="false" aria-controls="assistant-view" data-i18n="chat.tab">Помощник</button>
+            </div>
+
+            <div id="result-view">
+            <div id="result-empty" class="result-empty">
+              <p data-i18n="result.empty">Результат появится здесь. Выберите поле и нажмите «Проверить».</p>
+            </div>
+
+            <div id="result-loading" class="result-loading hidden" aria-live="polite">
+              <span class="spinner" aria-hidden="true"></span>
+              <div>
+                <strong data-i18n="result.loading">Запрашиваю Sentinel-2…</strong>
+                <p data-i18n="result.loadingNote">Считаю NDVI, форму, сроки и вероятность модели.</p>
+              </div>
+            </div>
+
+            <div id="result-error" class="result-error hidden" role="alert">
+              <strong data-i18n="result.error">Не удалось выполнить проверку.</strong>
+              <p id="result-error-text"></p>
+              <button type="button" class="outline-button small" id="retry-button">
+                <svg class="icon" aria-hidden="true"><use href="#icon-refresh"></use></svg>
+                <span data-i18n="result.retry">Повторить</span>
+              </button>
+            </div>
+
+            <div id="result-content" class="result-content hidden">
+              <div class="verdict-row">
+                <div class="verdict-left">
+                  <span id="verdict-dot" class="status-dot" aria-hidden="true"></span>
+                  <div>
+                    <span class="eyebrow" data-i18n="result.verdict">Вердикт</span>
+                    <h3 id="verdict-title">—</h3>
+                  </div>
+                </div>
+                <div class="score-block">
+                  <span class="score-label" data-i18n="result.match">Соответствие заявке</span>
+                  <div class="score-value"><strong id="score-value">—</strong><span>/ 100</span></div>
+                </div>
+              </div>
+
+              <p id="verdict-summary" class="verdict-summary"></p>
+
+              <div class="confidence-row" id="confidence-row">
+                <span>
+                  <span data-i18n="result.model">Уверенность модели</span>
+                  <strong id="model-confidence">—</strong>
+                </span>
+                <span id="ml-source" class="ml-source"></span>
+              </div>
+              <p id="model-confidence-note" class="model-confidence-note hidden" data-i18n="result.syntheticModelNote">Оценка ориентировочная: модель обучена на синтетике.</p>
+
+              <div id="guard-note" class="guard-note hidden">
+                <svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg>
+                <p data-i18n="result.guard">Высокий балл не отменяет вердикт: он оценивает только форму кривой, сроки и пик.</p>
+              </div>
+
+              <div class="source-row">
+                <svg class="icon source-icon" aria-hidden="true"><use href="#icon-satellite"></use></svg>
+                <div>
+                  <span class="source-row-label" data-i18n="result.source">Источник данных</span>
+                  <strong id="source-label"></strong>
+                  <p id="source-note"></p>
+                </div>
+              </div>
+
+              <div class="chart-block">
+                <div class="block-head">
+                  <h3 data-i18n="result.chart">NDVI за сезон</h3>
+                  <span class="block-meta" data-i18n="result.chartMeta">10-дневные композиты, 2026</span>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="ndvi-chart" role="img" aria-label="График NDVI за сезон"></canvas>
+                </div>
+                <div class="chart-legend">
+                  <span><i class="legend-line measured"></i><span data-i18n="legend.measured">Поле, измерено</span></span>
+                  <span><i class="legend-line interpolated"></i><span data-i18n="legend.interpolated">Восстановлено</span></span>
+                  <span><i class="legend-line reference"></i><span data-i18n="legend.reference">Эталон</span></span>
+                </div>
+              </div>
+
+              <div class="features-block">
+                <h3 data-i18n="features.title">Признаки</h3>
+                <dl id="features-grid" class="features-grid"></dl>
+              </div>
+
+              <div class="text-block">
+                <h3 data-i18n="explanation.title">Объяснение</h3>
+                <p id="explanation"></p>
+                <span id="explanation-source" class="ml-source"></span>
+              </div>
+
+              <div class="text-block">
+                <h3 data-i18n="reasons.title">Причины</h3>
+                <ul id="reasons" class="reasons-list"></ul>
+              </div>
+
+              <div class="text-block">
+                <h3 data-i18n="recommendation.title">Рекомендация аналитику</h3>
+                <p id="recommendation"></p>
+              </div>
+
+              <div class="top3-block">
+                <h3 data-i18n="top3.title">Вероятности культур</h3>
+                <div id="top3-list" class="top3-list"></div>
+              </div>
+
+              <div class="weather-block">
+                <div class="block-head">
+                  <h3 data-i18n="weather.title">Погодный контекст</h3>
+                  <span id="weather-source" class="block-meta"></span>
+                </div>
+                <div id="weather-chips" class="weather-chips"></div>
+                <p id="weather-context" class="weather-context"></p>
+              </div>
+
+              <div class="pdf-block">
+                <button type="button" class="outline-button" id="pdf-button">
+                  <svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg>
+                  <span data-i18n="pdf">Скачать PDF</span>
+                </button>
+                <p data-i18n="pdfHint">Откроется окно печати — выберите «Сохранить как PDF».</p>
+              </div>
+
+              <details class="how-block" id="how-block">
+                <summary>
+                  <span data-i18n="how.title">Как считается</span>
+                  <svg class="icon" aria-hidden="true"><use href="#icon-chevron"></use></svg>
+                </summary>
+                <div id="how-content" class="how-content"></div>
+              </details>
+
+              <p id="result-disclaimer" class="disclaimer"></p>
+            </div>
+            </div>
+
+            <div id="assistant-view" class="assistant-view hidden" role="tabpanel" aria-labelledby="assistant-view-button">
+              <p class="assistant-context" id="assistant-context" data-i18n="chat.noResult">Сначала выполните проверку поля.</p>
+              <p class="assistant-disclaimer" data-i18n="chat.disclaimer">Ответ формирует ИИ по данным проверки и он не заменяет решение аналитика.</p>
+              <div class="assistant-questions" id="assistant-questions" aria-label="Стартовые вопросы">
+                <button type="button" class="assistant-question" data-chat-question="verdict" data-i18n="chat.question.verdict">Что означает этот вердикт?</button>
+                <button type="button" class="assistant-question" data-chat-question="peak" data-i18n="chat.question.peak">Что показывает пик NDVI?</button>
+                <button type="button" class="assistant-question" data-chat-question="dates" data-i18n="chat.question.dates">Объясни даты роста и спада</button>
+                <button type="button" class="assistant-question" data-chat-question="recommendation" data-i18n="chat.question.recommendation">Что проверить аналитику?</button>
+              </div>
+              <div id="assistant-messages" class="assistant-messages" role="log" aria-live="polite"></div>
+              <div id="assistant-loading" class="assistant-loading hidden" aria-live="polite">
+                <span class="spinner" aria-hidden="true"></span>
+                <span data-i18n="chat.thinking">Помощник формирует ответ…</span>
+              </div>
+              <p id="assistant-error" class="assistant-error hidden" role="alert"></p>
+              <form id="assistant-form" class="assistant-form">
+                <input id="assistant-input" type="text" maxlength="500" autocomplete="off" data-i18n-placeholder="chat.input" placeholder="Задайте вопрос по результату проверки" disabled>
+                <button type="submit" class="primary-button" id="assistant-send" data-i18n="chat.send" disabled>Отправить</button>
+              </form>
+              <p id="assistant-limit" class="assistant-limit"></p>
+            </div>
+          </section>
+        </aside>
+
+        <div class="map-shell" id="map-shell">
+          <div class="map-stage" id="map-stage">
+          <div class="map-toolbar">
+            <div class="search-box">
+              <svg class="icon search-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+              <input id="place-search" type="search" autocomplete="off" spellcheck="false" aria-label="Найти место или координаты" data-i18n-placeholder="map.search" placeholder="Найти место или координаты: 51.7, 71.0">
+              <div id="search-results" class="search-results hidden" role="listbox" aria-label="Результаты поиска"></div>
+            </div>
+          </div>
+          <div class="basemap-toggle" role="group" aria-label="Фон карты">
+            <button type="button" data-basemap="scheme" data-i18n="map.scheme" aria-pressed="false">Схема</button>
+            <button type="button" data-basemap="satellite" class="active" aria-pressed="true" data-i18n="map.satellite">Спутник</button>
+          </div>
+
+          <div id="map" class="map-canvas" data-i18n-aria-label="map.ariaLabel" aria-label="Карта"></div>
+
+          <div id="map-hint" class="map-hint hidden" role="status"></div>
+          <div id="map-notice" class="map-notice hidden" role="alert"></div>
+
+          <div id="temporal-legend" class="temporal-legend hidden" aria-hidden="true">
+            <strong id="temporal-legend-title" data-i18n="temporal.legend.ndvi">NDVI</strong>
+            <div id="temporal-legend-colors" class="temporal-legend-colors"></div>
+            <div class="temporal-legend-range">
+              <span id="temporal-legend-min">0</span>
+              <span id="temporal-legend-max">1</span>
+            </div>
+          </div>
+
+          <div id="draw-toolbar" class="draw-toolbar hidden" role="toolbar" aria-label="Управление рисованием">
+            <span id="draw-count" class="draw-count">0</span>
+            <button type="button" class="draw-action" id="undo-point">
+              <span data-i18n="action.undo">Отменить точку</span>
+            </button>
+            <button type="button" class="draw-action solid" id="finish-draw">
+              <span data-i18n="action.finish">Готово</span>
+            </button>
+            <button type="button" class="draw-action" id="cancel-draw">
+              <span data-i18n="action.cancel">Отмена</span>
+            </button>
+          </div>
+
+          <div id="draw-sheet" class="draw-sheet hidden" role="dialog" aria-modal="false" aria-label="Рисование контура">
+            <div class="draw-sheet-head">
+              <strong id="draw-sheet-title" data-i18n="action.draw">Нарисовать контур</strong>
+              <span id="draw-sheet-count"></span>
+            </div>
+            <div class="draw-sheet-actions">
+              <button type="button" class="outline-button" id="sheet-undo"><span data-i18n="action.undo">Отменить точку</span></button>
+              <button type="button" class="primary-button" id="sheet-finish" disabled><span data-i18n="action.finish">Готово</span></button>
+              <button type="button" class="outline-button" id="sheet-cancel"><span data-i18n="action.cancel">Отмена</span></button>
+            </div>
+          </div>
+
+          <div class="map-footer">
+            <span id="map-scale-note" data-i18n="map.offline">Без интернета карта может не загрузиться; проверка демо-полей работает.</span>
+            <span class="map-credit">© OpenStreetMap · © Esri, Maxar</span>
+          </div>
+          </div>
+
+          <section id="temporal-panel" class="temporal-panel hidden" aria-label="Временной ряд поля">
+            <div class="temporal-summary">
+              <button type="button" id="temporal-play" class="temporal-play" aria-label="Запустить проигрывание сезона" disabled>
+                <span aria-hidden="true">▶</span>
+              </button>
+              <div class="temporal-reading">
+                <strong id="temporal-date"></strong>
+                <span id="temporal-value"></span>
+                <span id="temporal-stage"></span>
+                <span id="temporal-source" class="temporal-source"></span>
+                <span id="temporal-restored" class="temporal-restored hidden" data-i18n="temporal.restored">Восстановлено</span>
+              </div>
+              <div class="temporal-mode" role="group" aria-label="Режим отображения">
+                <button type="button" class="active" data-temporal-mode="ndvi" aria-pressed="true" data-i18n="temporal.mode.ndvi">NDVI</button>
+                <button type="button" data-temporal-mode="deviation" aria-pressed="false" data-i18n="temporal.mode.deviation">Отклонение от эталона</button>
+              </div>
+            </div>
+            <div class="temporal-timeline">
+              <div id="temporal-markers" class="temporal-markers" aria-hidden="true"></div>
+              <input id="temporal-slider" class="temporal-slider" type="range" min="0" max="0" step="1" value="0" aria-label="Дата сезонного композита" disabled>
+              <div id="temporal-months" class="temporal-months" aria-hidden="true"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-portfolio" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-portfolio" hidden>
+      <div class="portfolio-screen">
+        <div class="portfolio-toolbar">
+          <div class="toolbar-group">
+            <button type="button" class="primary-button compact" id="load-sample">
+              <svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg>
+              <span data-i18n="portfolio.sample">Загрузить пример (20 полей)</span>
+            </button>
+            <label class="outline-button compact file-button" for="csv-input">
+              <svg class="icon" aria-hidden="true"><use href="#icon-upload"></use></svg>
+              <span data-i18n="portfolio.upload">Загрузить CSV</span>
+              <input id="csv-input" type="file" accept=".csv,text/csv" hidden>
+            </label>
+            <a href="/api/sample-batch?format=csv" class="text-button" id="csv-template" download="agro-template.csv" data-i18n="portfolio.template">Шаблон CSV</a>
+          </div>
+          <div class="toolbar-group">
+            <label class="filter-wrap" for="verdict-filter">
+              <select id="verdict-filter">
+                <option value="" data-i18n="filter.all">Все вердикты</option>
+                <option value="crop_mismatch" data-i18n="verdict.crop_mismatch">Несоответствие культуры</option>
+                <option value="not_found" data-i18n="verdict.not_found">Посева не обнаружено</option>
+                <option value="needs_check" data-i18n="verdict.needs_check">Требует проверки</option>
+                <option value="doubtful" data-i18n="verdict.doubtful">Сомнительно</option>
+                <option value="confirmed" data-i18n="verdict.confirmed">Подтверждено</option>
+              </select>
+              <svg class="select-chevron" aria-hidden="true"><use href="#icon-chevron"></use></svg>
+            </label>
+            <button type="button" class="outline-button compact" id="export-csv">
+              <svg class="icon" aria-hidden="true"><use href="#icon-download"></use></svg>
+              <span data-i18n="portfolio.export">Экспорт CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <h1 class="portfolio-heading" data-i18n="portfolio.title">Портфель</h1>
+
+        <div class="portfolio-meta">
+          <span id="portfolio-count" data-i18n="portfolio.empty">Портфель пуст. Загрузите пример или CSV.</span>
+          <span id="portfolio-source" class="source-chip synthetic">Синтетика</span>
+          <span id="portfolio-timestamp"></span>
+        </div>
+        <p id="portfolio-note" class="portfolio-note-small" data-i18n="portfolio.note">Демонстрационные ряды портфеля синтетические и помечены в данных.</p>
+
+        <div id="portfolio-loading" class="portfolio-loading hidden" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span data-i18n="portfolio.loading">Проверяю портфель…</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="portfolio-table" id="portfolio-table">
+            <thead>
+              <tr>
+                <th scope="col" data-sort="id" aria-sort="none"><button type="button"><span data-i18n="table.field">Поле</span><span class="sort-mark"></span></button></th>
+                <th scope="col" data-sort="crop" aria-sort="none"><button type="button"><span data-i18n="table.crop">Культура</span><span class="sort-mark"></span></button></th>
+                <th scope="col" data-sort="score" aria-sort="none" class="numeric"><button type="button"><span data-i18n="table.score">Соответствие</span><span class="sort-mark"></span></button></th>
+                <th scope="col" data-sort="verdict" aria-sort="ascending"><button type="button"><span data-i18n="table.verdict">Вердикт</span><span class="sort-mark"></span></button></th>
+                <th scope="col"><span data-i18n="table.reason">Основная причина</span></th>
+              </tr>
+            </thead>
+            <tbody id="portfolio-body"></tbody>
+          </table>
+        </div>
+
+        <div id="portfolio-empty" class="portfolio-empty hidden">
+          <p data-i18n="portfolio.empty">Портфель пуст. Загрузите пример или CSV.</p>
+        </div>
+
+        <div class="effect-panel">
+          <div class="effect-label">
+            <strong data-i18n="effect.title">Эффект</strong>
+            <span data-i18n="effect.assumption">допущение, не факт</span>
+          </div>
+          <label class="effect-field" for="effect-visit">
+            <span data-i18n="effect.visit">Выезд специалиста, ₸ за поле</span>
+            <input id="effect-visit" type="number" min="0" step="500" value="35000" inputmode="numeric">
+          </label>
+          <label class="effect-field" for="effect-remote">
+            <span data-i18n="effect.remote">Дистанционная проверка, ₸ за поле</span>
+            <input id="effect-remote" type="number" min="0" step="100" value="2500" inputmode="numeric">
+          </label>
+          <label class="effect-field" for="effect-fields">
+            <span data-i18n="effect.fields">Полей</span>
+            <input id="effect-fields" type="number" min="0" step="1" value="100" inputmode="numeric">
+          </label>
+          <div class="effect-total">
+            <span data-i18n="effect.savings">Экономия</span>
+            <strong id="effect-savings">3 250 000 ₸</strong>
+            <small id="effect-formula">(35 000 − 2 500) × 100</small>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <section id="print-report" class="print-report" aria-hidden="true"></section>
+
+  <script src="/vendor/leaflet.js"></script>
+  <script src="/vendor/chart.umd.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
