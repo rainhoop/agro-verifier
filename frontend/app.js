@@ -1844,9 +1844,28 @@
 
   function chatContext(result) {
     const features = result.features || {};
+    const scalarValues = (values) =>
+      Object.fromEntries(
+        Object.entries(values || {}).filter(
+          ([, value]) =>
+            value == null ||
+            ["string", "number", "boolean"].includes(typeof value)
+        )
+      );
+    const weather = scalarValues(result.weather);
+    if (result.weather && result.weather.period) {
+      weather.period_start = result.weather.period.start || null;
+      weather.period_end = result.weather.period.end || null;
+    }
     return {
       field_name: (result.field && result.field.name) || "",
       crop: (result.field && result.field.crop_declared_label) || "",
+      crop_code: (result.field && result.field.crop_declared) || "",
+      sowing_date: (result.field && result.field.sowing_date) || null,
+      area_ha:
+        result.field && Number.isFinite(Number(result.field.area_ha))
+          ? Number(result.field.area_ha)
+          : null,
       verdict: result.verdict_label || "",
       score: Number(result.score) || 0,
       source: result.source_label || "",
@@ -1854,6 +1873,8 @@
         result.ml && Number.isFinite(Number(result.ml.probability))
           ? Number(result.ml.probability)
           : null,
+      model_crop: (result.ml && result.ml.predicted_label) || "",
+      model_top3: Array.isArray(result.top3) ? result.top3.slice(0, 5) : [],
       peak_ndvi: features.peak_ndvi == null ? null : Number(features.peak_ndvi),
       growth_start_date: features.growth_start_date || null,
       peak_date: features.peak_date || null,
@@ -1868,6 +1889,33 @@
         features.precipitation_index_pct == null
           ? null
           : Number(features.precipitation_index_pct),
+      features: scalarValues(features),
+      weather,
+      season: Array.isArray(result.series)
+        ? result.series.slice(0, 40).map((point, index) => ({
+            date: point.date,
+            ndvi: point.ndvi,
+            raw_ndvi:
+              Array.isArray(result.ndvi_raw) && result.ndvi_raw[index] != null
+                ? result.ndvi_raw[index]
+                : null,
+            reference_ndvi:
+              Array.isArray(result.reference) &&
+              result.reference[index] &&
+              result.reference[index].ndvi != null
+                ? result.reference[index].ndvi
+                : null,
+            measured: Boolean(point.measured),
+            valid_fraction: point.valid_fraction,
+            stage: point.stage,
+          }))
+        : [],
+      explanation:
+        (result.explanation && result.explanation.summary) || "",
+      reasons:
+        result.explanation && Array.isArray(result.explanation.reasons)
+          ? result.explanation.reasons.slice(0, 8)
+          : [],
       recommendation:
         (result.explanation && result.explanation.recommendation) || "",
     };
@@ -1985,6 +2033,12 @@
           question_id: questionId,
           lang: state.lang,
           context: chatContext(state.lastResult),
+          history: state.chatMessages
+            .slice(-7, -1)
+            .map(({ role, text: messageText }) => ({
+              role,
+              text: messageText,
+            })),
         }),
       });
       state.chatMessages.push({
