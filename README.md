@@ -178,19 +178,3 @@ requirements-dev.txt     Зависимости тестирования и ра
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Правообладатель: **SwagMogTeam 19**.
-
-## Команда
-
-- Руководитель проекта: заполните имя.
-- Разработка: заполните имена и роли.
-- Предметная экспертиза: заполните имя.
-
-## English summary
-
-AgroVerifier is a Russian/Kazakh web application for remote review of declared
-crop planting using seasonal Sentinel-2 NDVI data. It combines rule-based
-metrics, a synthetic-data-trained classifier, transparent explanations, and
-optional LLM assistance. Demo crop and sowing details are conditional; model
-results are not validated on real fields and are not legal proof. See the
-Russian documentation above for setup, deployment, data limitations, and
-third-party notices.
