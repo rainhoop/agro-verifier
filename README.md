@@ -9,7 +9,7 @@
 ![CI](https://github.com/rainhoop/agro-verifier/actions/workflows/ci.yml/badge.svg)
 ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)
 
-> **Демо: добавьте ссылку после деплоя**
+> **Публичная демоверсия не размещается. Приложение предназначено для локального или закрытого развёртывания.**
 
 ![Экран проверки поля](docs/screenshots/field-check.png)
 
