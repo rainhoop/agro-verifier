@@ -2819,10 +2819,10 @@ kbd {
   }
 
   .map-stage {
-    flex: 0 0 46vh;
-    flex-basis: 46dvh;
-    min-height: 300px;
-    max-height: 420px;
+    flex: 0 0 58vh;
+    flex-basis: 58dvh;
+    min-height: 360px;
+    max-height: 520px;
   }
 
   .temporal-panel {

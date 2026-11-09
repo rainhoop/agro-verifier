@@ -110,7 +110,7 @@ def _verify_layout(page: Any, width: int) -> None:
     if temporal and temporal["visible"]:
         map_stage = layout["#map-stage"]
         if width < 700 and not layout["drawing"]:
-            expected_height = min(420, max(300, layout["viewportHeight"] * 0.46))
+            expected_height = min(520, max(360, layout["viewportHeight"] * 0.58))
             assert map_stage["height"] >= expected_height - 1
         assert map_stage["y"] + map_stage["height"] <= temporal["y"] + 1
         legend = layout["#temporal-legend"]
