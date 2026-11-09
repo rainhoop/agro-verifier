@@ -122,3 +122,23 @@ def test_demo_fields_are_loaded_only_when_requested() -> None:
         "async function loadDemos()", 1
     )[0]
     assert "loadDemos()" not in init
+
+
+def test_user_state_is_saved_and_restored_in_the_browser() -> None:
+    app_js = (FRONTEND / "app.js").read_text("utf-8")
+    assert 'const STORAGE_KEY = "agro-verifier-state-v1"' in app_js
+    assert "restoreAppState();" in app_js
+    assert "function saveAppState()" in app_js
+    for saved_value in (
+        "selectedDemoId",
+        "geojson",
+        "lastResult",
+        "chatMessages",
+        "assistantDraft",
+        "searchDraft",
+        "batchRows",
+        "mapView",
+        "effectVisit",
+    ):
+        assert saved_value in app_js
+    assert 'window.addEventListener("pagehide", saveAppState)' in app_js

@@ -15,6 +15,7 @@
   };
   const DEFAULT_AREA_MIN = 10;
   const DEFAULT_AREA_MAX = 5000;
+  const STORAGE_KEY = "agro-verifier-state-v1";
   const SATELLITE_URL =
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
   const SCHEME_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -62,6 +63,7 @@
     rectAnchorMarker: null,
     chart: null,
     lastResult: null,
+    lastResultParams: null,
     temporalIndex: 0,
     temporalMode: "ndvi",
     temporalPlayback: null,
@@ -81,6 +83,7 @@
     searchResults: [],
     searchIndex: -1,
     activeTab: "check",
+    activeResultView: "result",
     batchRows: [],
     batchMeta: null,
     batchInputRows: null,
@@ -92,6 +95,8 @@
     sortDir: "asc",
     portfolioView: [],
     effectTimer: null,
+    restoredMapView: null,
+    restoredTemporal: null,
   };
 
   /* ======================================================================
@@ -217,6 +222,8 @@
       max: Number.isFinite(Number(area.max_ha)) ? Number(area.max_ha) : DEFAULT_AREA_MAX,
     };
   }
+
+  const saveAppStateSoon = debounce(saveAppState, 250);
 
   /* ======================================================================
      Domain helpers: geodesic area and simple polygon test
@@ -483,6 +490,7 @@
   document.addEventListener("DOMContentLoaded", init);
 
   async function init() {
+    restoreAppState();
     bindEvents();
     renderHowContent();
     updateEffect();
@@ -494,7 +502,11 @@
     const configPromise = fetchJSON("/api/config").catch(() => null);
     let requestedChatSession = "";
     try {
-      requestedChatSession = window.sessionStorage.getItem("agro-chat-session") || "";
+      requestedChatSession =
+        state.chatSessionId ||
+        window.localStorage.getItem("agro-chat-session") ||
+        window.sessionStorage.getItem("agro-chat-session") ||
+        "";
     } catch (error) {
       console.warn("Chat session storage is unavailable");
     }
@@ -513,27 +525,42 @@
     ]);
     if (i18n && i18n.ru) state.i18n = i18n;
     state.config = config;
-    state.chatSessionId = chatConfig && chatConfig.session_id;
+    state.chatSessionId = (chatConfig && chatConfig.session_id) || state.chatSessionId;
     if (state.chatSessionId) {
       try {
+        window.localStorage.setItem("agro-chat-session", state.chatSessionId);
         window.sessionStorage.setItem("agro-chat-session", state.chatSessionId);
       } catch (error) {
-        console.warn("Chat session storage is unavailable");
+        console.warn("Chat session storage is unavailable", error);
       }
     }
     state.chatFreeTextEnabled = Boolean(chatConfig && chatConfig.free_text_enabled);
     applyStaticI18n();
     updateAssistantUI();
+    saveAppState();
     initMap();
+    if (state.map) {
+      await restoreSavedDemoField();
+      restoreFieldState();
+      updateBasemapButtons();
+      els.verdictFilter.value = state.verdictFilter || "";
+      if (state.batchRows.length) renderPortfolio();
+      switchResultView(state.activeResultView);
+      renderAssistantMessages();
+    }
 
     updateVerifyState();
     if (new URLSearchParams(window.location.search).get("demo") === "1") {
       toggleDemoPanel(true);
     }
 
-    const initialTab = window.location.hash === "#portfolio" ? "portfolio" : "check";
+    const initialTab =
+      window.location.hash === "#portfolio"
+        ? "portfolio"
+        : state.activeTab;
     switchTab(initialTab, { history: false });
     updateEffect();
+    saveAppState();
   }
 
   async function loadDemos() {
@@ -551,6 +578,15 @@
         state.demoLoadPromise = null;
       });
     return state.demoLoadPromise;
+  }
+
+  async function restoreSavedDemoField() {
+    if (!state.selectedDemoId) return;
+    try {
+      await loadDemos();
+    } catch (error) {
+      console.error("Saved demo field could not be restored", error);
+    }
   }
 
   /* ======================================================================
@@ -597,10 +633,14 @@
     els.temporalSlider.addEventListener("input", () => {
       state.temporalIndex = Number(els.temporalSlider.value);
       updateTemporalSelection();
+      saveAppState();
     });
     els.temporalPlay.addEventListener("click", toggleTemporalPlayback);
     els.temporalModeButtons.forEach((button) => {
-      button.addEventListener("click", () => setTemporalMode(button.dataset.temporalMode));
+      button.addEventListener("click", () => {
+        setTemporalMode(button.dataset.temporalMode);
+        saveAppState();
+      });
     });
     els.assistantQuestions.forEach((button) => {
       button.addEventListener("click", () =>
@@ -613,6 +653,7 @@
       if (question && state.chatFreeTextEnabled) sendAssistantQuestion(null, question);
     });
     els.assistantInput.addEventListener("input", updateAssistantUI);
+    els.assistantInput.addEventListener("input", saveAppStateSoon);
     els.assistantMessages.addEventListener("click", onAssistantAction);
 
     els.undoPoint.addEventListener("click", undoPoint);
@@ -630,6 +671,9 @@
 
     els.cropSelect.addEventListener("change", updateVerifyState);
     els.sowingDate.addEventListener("change", updateVerifyState);
+    [els.cropSelect, els.sowingDate].forEach((input) => {
+      input.addEventListener("change", saveAppState);
+    });
     els.pdfButton.addEventListener("click", printReport);
 
     els.basemapButtons.forEach((button) => {
@@ -637,6 +681,7 @@
     });
 
     els.searchInput.addEventListener("input", onSearchInput);
+    els.searchInput.addEventListener("input", saveAppStateSoon);
     els.searchInput.addEventListener("keydown", onSearchKeydown);
     els.searchResults.addEventListener("click", (event) => {
       const button = event.target.closest("[data-result-index]");
@@ -653,7 +698,10 @@
     els.loadSample.addEventListener("click", () => loadSample());
     els.csvInput.addEventListener("change", onCsvChange);
     els.exportCsv.addEventListener("click", exportPortfolioCsv);
-    els.verdictFilter.addEventListener("change", renderPortfolio);
+    els.verdictFilter.addEventListener("change", () => {
+      renderPortfolio();
+      saveAppState();
+    });
     els.portfolioTable.querySelector("thead").addEventListener("click", (event) => {
       const button = event.target.closest("button");
       if (!button) return;
@@ -674,13 +722,18 @@
     });
 
     [els.effectVisit, els.effectRemote, els.effectFields].forEach((input) => {
-      input.addEventListener("input", updateEffect);
+      input.addEventListener("input", () => {
+        updateEffect();
+        saveAppStateSoon();
+      });
     });
 
     window.addEventListener("resize", debounce(() => {
       if (state.map) state.map.invalidateSize();
       if (state.chart) state.chart.resize();
     }, 150));
+    window.addEventListener("pagehide", saveAppState);
+    window.addEventListener("beforeunload", saveAppState);
   }
 
   function debounce(callback, delay) {
@@ -689,6 +742,287 @@
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(() => callback.apply(null, args), delay);
     };
+  }
+
+  function restoreAppState() {
+    let saved;
+    try {
+      saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
+    } catch (error) {
+      console.warn("Saved app state could not be read", error);
+      return;
+    }
+    if (!saved || typeof saved !== "object" || saved.version !== 1) return;
+
+    if (saved.lang === "ru" || saved.lang === "kz") state.lang = saved.lang;
+    if (saved.basemap === "satellite" || saved.basemap === "scheme") {
+      state.basemap = saved.basemap;
+    }
+    if (saved.activeTab === "check" || saved.activeTab === "portfolio") {
+      state.activeTab = saved.activeTab;
+    }
+    if (saved.activeResultView === "result" || saved.activeResultView === "assistant") {
+      state.activeResultView = saved.activeResultView;
+    }
+    if (typeof saved.selectedDemoId === "string") {
+      state.selectedDemoId = saved.selectedDemoId;
+    }
+    if (
+      saved.geojson &&
+      saved.geojson.type === "Polygon" &&
+      Array.isArray(saved.geojson.coordinates)
+    ) {
+      state.geojson = saved.geojson;
+    }
+    if (saved.mode === "polygon" || saved.mode === "rectangle") {
+      state.mode = saved.mode;
+    }
+    if (Array.isArray(saved.points)) {
+      state.points = saved.points
+        .filter(
+          (point) =>
+            Array.isArray(point) &&
+            point.length === 2 &&
+            point.every(Number.isFinite) &&
+            Math.abs(point[0]) <= 90 &&
+            Math.abs(point[1]) <= 180
+        )
+        .map(([lat, lng]) => L.latLng(lat, lng));
+    }
+    if (
+      Array.isArray(saved.rectAnchor) &&
+      saved.rectAnchor.length === 2 &&
+      saved.rectAnchor.every(Number.isFinite) &&
+      Math.abs(saved.rectAnchor[0]) <= 90 &&
+      Math.abs(saved.rectAnchor[1]) <= 180
+    ) {
+      state.rectAnchor = L.latLng(saved.rectAnchor[0], saved.rectAnchor[1]);
+    }
+    if (CROPS.includes(saved.crop)) els.cropSelect.value = saved.crop;
+    if (
+      typeof saved.sowingDate === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(saved.sowingDate)
+    ) {
+      els.sowingDate.value = saved.sowingDate;
+    }
+    if (
+      saved.lastResult &&
+      typeof saved.lastResult === "object" &&
+      saved.lastResult.field &&
+      Array.isArray(saved.lastResult.series)
+    ) {
+      state.lastResult = saved.lastResult;
+    }
+    if (saved.lastResultParams && typeof saved.lastResultParams === "object") {
+      state.lastResultParams = saved.lastResultParams;
+    }
+    if (Array.isArray(saved.chatMessages)) {
+      state.chatMessages = saved.chatMessages
+        .filter(
+          (message) =>
+            message &&
+            (message.role === "user" || message.role === "assistant") &&
+            typeof message.text === "string"
+        )
+        .slice(-30);
+    }
+    if (typeof saved.chatSessionId === "string") {
+      state.chatSessionId = saved.chatSessionId;
+    }
+    if (typeof saved.assistantDraft === "string") {
+      els.assistantInput.value = saved.assistantDraft.slice(0, 500);
+    }
+    if (typeof saved.searchDraft === "string") {
+      els.searchInput.value = saved.searchDraft.slice(0, 200);
+    }
+    if (Array.isArray(saved.batchRows)) state.batchRows = saved.batchRows;
+    if (saved.batchMeta && typeof saved.batchMeta === "object") {
+      state.batchMeta = saved.batchMeta;
+    }
+    state.portfolioLoaded = state.batchRows.length > 0;
+    if (typeof saved.lastBatchAt === "string" && Number.isFinite(Date.parse(saved.lastBatchAt))) {
+      state.lastBatchAt = new Date(saved.lastBatchAt);
+    }
+    if (["id", "verdict", "score", "crop"].includes(saved.sortKey)) {
+      state.sortKey = saved.sortKey;
+    }
+    if (saved.sortDir === "asc" || saved.sortDir === "desc") {
+      state.sortDir = saved.sortDir;
+    }
+    if (typeof saved.verdictFilter === "string") {
+      state.verdictFilter = saved.verdictFilter;
+    }
+    if (saved.mapView && Array.isArray(saved.mapView.center)) {
+      const [lat, lng] = saved.mapView.center;
+      const zoom = Number(saved.mapView.zoom);
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        Math.abs(lat) <= 90 &&
+        Math.abs(lng) <= 180 &&
+        Number.isFinite(zoom) &&
+        zoom >= 3 &&
+        zoom <= 19
+      ) {
+        state.restoredMapView = { center: [lat, lng], zoom };
+      }
+    }
+    if (
+      saved.temporal &&
+      (saved.temporal.mode === "ndvi" || saved.temporal.mode === "deviation") &&
+      Number.isInteger(saved.temporal.index)
+    ) {
+      state.restoredTemporal = saved.temporal;
+    }
+    if (saved.effect && typeof saved.effect === "object") {
+      ["effectVisit", "effectRemote", "effectFields"].forEach((key) => {
+        const value = saved.effect[key];
+        if (typeof value === "string" && /^\d{1,12}$/.test(value)) {
+          els[key].value = value;
+        }
+      });
+    }
+    if (
+      saved.lastResult &&
+      (!state.selectedDemoId && !state.geojson ||
+        !state.lastResultParams ||
+        state.lastResultParams.crop !== els.cropSelect.value ||
+        state.lastResultParams.sowing_date !== els.sowingDate.value)
+    ) {
+      state.lastResult = null;
+      state.lastResultParams = null;
+      state.chatMessages = [];
+    }
+  }
+
+  function saveAppState() {
+    const center = state.map && state.map.getCenter();
+    const snapshot = {
+      version: 1,
+      lang: state.lang,
+      basemap: state.basemap,
+      activeTab: state.activeTab,
+      activeResultView: state.activeResultView,
+      selectedDemoId: state.selectedDemoId,
+      geojson: state.geojson,
+      mode: state.mode,
+      points: state.points.map((point) => [point.lat, point.lng]),
+      rectAnchor: state.rectAnchor
+        ? [state.rectAnchor.lat, state.rectAnchor.lng]
+        : null,
+      crop: els.cropSelect.value,
+      sowingDate: els.sowingDate.value,
+      lastResult: state.lastResult,
+      lastResultParams: state.lastResultParams,
+      temporal: {
+        mode: state.temporalMode,
+        index: state.temporalIndex,
+      },
+      chatMessages: state.chatMessages.slice(-30),
+      chatSessionId: state.chatSessionId,
+      assistantDraft: els.assistantInput.value.slice(0, 500),
+      searchDraft: els.searchInput.value.slice(0, 200),
+      batchRows: state.batchRows,
+      batchMeta: state.batchMeta,
+      lastBatchAt: state.lastBatchAt ? state.lastBatchAt.toISOString() : null,
+      sortKey: state.sortKey,
+      sortDir: state.sortDir,
+      verdictFilter: els.verdictFilter.value,
+      mapView: center
+        ? { center: [center.lat, center.lng], zoom: state.map.getZoom() }
+        : state.restoredMapView,
+      effect: {
+        effectVisit: els.effectVisit.value,
+        effectRemote: els.effectRemote.value,
+        effectFields: els.effectFields.value,
+      },
+    };
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+      console.warn("App state could not be saved in this browser", error);
+    }
+  }
+
+  function restoreFieldState() {
+    if (state.selectedDemoId) {
+      const field = state.demoFields.find((item) => item.id === state.selectedDemoId);
+      if (field) {
+        state.selectedField = field;
+        drawDemoLayers();
+        updateFieldCardDemo(field);
+      } else {
+        state.selectedDemoId = null;
+      }
+    }
+    if (state.geojson && !state.selectedDemoId) {
+      const ring = state.geojson.coordinates[0];
+      if (Array.isArray(ring) && ring.length >= 4) {
+        const points = ring.slice(0, -1).map(([lng, lat]) => L.latLng(lat, lng));
+        if (points.every((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng))) {
+          state.drawnAreaHa = ringAreaHa(points);
+          state.drawnVertices = points.length;
+          state.finalLayer = L.polygon(points, {
+            color: "#ffffff",
+            weight: 2.2,
+            opacity: 0.95,
+            fillColor: "#ffffff",
+            fillOpacity: 0.12,
+            interactive: false,
+            className: "drawn-polygon",
+          }).addTo(state.map);
+          updateDrawnFieldCard();
+        } else {
+          state.geojson = null;
+        }
+      } else {
+        state.geojson = null;
+      }
+    }
+    if (state.mode) {
+      const mode = state.mode;
+      const points = state.points;
+      const anchor = state.rectAnchor;
+      state.mode = null;
+      state.points = [];
+      state.rectAnchor = null;
+      startDrawing(mode);
+      state.points = points;
+      state.rectAnchor = anchor;
+      if (mode === "rectangle" && anchor) {
+        state.rectAnchorMarker = L.marker(anchor, {
+          icon: L.divIcon({
+            className: "vertex-icon first",
+            html: "<span></span>",
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+          }),
+          interactive: false,
+          keyboard: false,
+        }).addTo(state.map);
+      }
+      renderVertexMarkers();
+      refreshShapeLayers();
+      updateDrawingUI();
+      saveAppState();
+    }
+    if (state.lastResult && !state.mode && (state.selectedField || state.geojson)) {
+      renderResult(state.lastResult);
+      updateDemoStyles();
+      if (state.restoredTemporal) {
+        setTemporalMode(state.restoredTemporal.mode);
+        const maxIndex = Math.max(0, state.lastResult.series.length - 1);
+        state.temporalIndex = clamp(state.restoredTemporal.index, 0, maxIndex);
+        els.temporalSlider.value = String(state.temporalIndex);
+        updateTemporalSelection();
+      }
+      if (state.activeResultView === "assistant") renderAssistantMessages();
+    } else {
+      state.lastResult = null;
+      state.lastResultParams = null;
+      state.chatMessages = [];
+    }
+    updateVerifyState();
   }
 
   async function setLanguage(lang) {
@@ -731,6 +1065,7 @@
     }
     if (state.batchRows.length || state.batchFile) reloadBatchForLanguage();
     updateEffect();
+    saveAppState();
   }
 
   /* ======================================================================
@@ -766,6 +1101,7 @@
     } else if (!state.portfolioLoaded && !state.batchLoading) {
       loadSample({ silent: true });
     }
+    saveAppState();
   }
 
   /* ======================================================================
@@ -800,20 +1136,32 @@
       attribution: SCHEME_ATTRIBUTION,
       crossOrigin: true,
     });
-    state.satelliteLayer.addTo(map);
+    if (state.basemap === "scheme") {
+      state.schemeLayer.addTo(map);
+      map.getContainer().classList.add("scheme");
+    } else {
+      state.satelliteLayer.addTo(map);
+    }
     L.control.zoom({ position: "topright" }).addTo(map);
-    map.fitBounds(
-      [
-        [50.8, 64.5],
-        [56.2, 74.5],
-      ],
-      { padding: [20, 20], animate: false }
-    );
+    if (state.restoredMapView) {
+      map.setView(state.restoredMapView.center, state.restoredMapView.zoom, {
+        animate: false,
+      });
+    } else {
+      map.fitBounds(
+        [
+          [50.8, 64.5],
+          [56.2, 74.5],
+        ],
+        { padding: [20, 20], animate: false }
+      );
+    }
 
     map.on("click", onMapClick);
     map.on("dblclick", onMapDoubleClick);
     map.on("mousemove", onMapMouseMove);
     map.on("tileerror", onTileError);
+    map.on("moveend zoomend", saveAppState);
     state.map = map;
   }
 
@@ -851,6 +1199,7 @@
     state.basemap = name;
     state.map.getContainer().classList.toggle("scheme", name === "scheme");
     updateBasemapButtons();
+    saveAppState();
   }
 
   function updateBasemapButtons() {
@@ -982,6 +1331,7 @@
     updateVerifyState();
     if (options.zoom) zoomToField(field);
     if (options.verifyNow) verify({ scroll: Boolean(options.scroll) });
+    saveAppState();
   }
 
   function updateFieldCardDemo(field) {
@@ -1092,6 +1442,7 @@
         loadDemos().catch((error) => showToast(error.message || t("result.error")));
       }
     }
+    saveAppState();
   }
 
   function closeDemoPanel() {
@@ -1154,6 +1505,7 @@
     els.cropSelect.value = "wheat";
     els.sowingDate.value = "2026-05-15";
     hideMapNotice();
+    saveAppState();
   }
 
   /* ======================================================================
@@ -1210,6 +1562,7 @@
     window.setTimeout(() => {
       if (state.map) state.map.invalidateSize();
     }, 40);
+    saveAppState();
   }
 
   function endDrawingUi() {
@@ -1266,6 +1619,7 @@
     resetFieldCardEmpty();
     resetResult();
     updateVerifyState();
+    saveAppState();
     if (!options.quiet) showToast(t("action.cancel"));
   }
 
@@ -1294,6 +1648,7 @@
     renderVertexMarkers();
     refreshShapeLayers();
     updateDrawingUI();
+    saveAppState();
   }
 
   function drawSheetMaxOffset() {
@@ -1377,6 +1732,7 @@
         state.rectAnchorMarker = null;
         state.rectPreview = null;
         updateDrawingUI();
+        saveAppState();
       }
       return;
     }
@@ -1386,6 +1742,7 @@
     renderVertexMarkers();
     refreshShapeLayers();
     updateDrawingUI();
+    saveAppState();
   }
 
   function clearCursorLine() {
@@ -1433,6 +1790,7 @@
           hideMapNotice();
         }
         updateDrawingUI();
+        saveAppState();
       });
       marker.addTo(state.markerGroup);
       state.markers.push(marker);
@@ -1534,6 +1892,7 @@
         keyboard: false,
       }).addTo(state.map);
       updateDrawingUI();
+      saveAppState();
       return;
     }
     const anchor = state.rectAnchor;
@@ -1663,6 +2022,7 @@
     updateDrawnFieldCard();
     resetResult();
     updateVerifyState();
+    saveAppState();
   }
 
   function removeFinalLayer() {
@@ -1795,10 +2155,15 @@
       });
       if (seq !== state.verifySeq) return;
       state.lastResult = result;
+      state.lastResultParams = {
+        crop: payload.crop,
+        sowing_date: payload.sowing_date,
+      };
       state.chatMessages = [];
       switchResultView("result");
       renderResult(result);
       updateAssistantUI();
+      saveAppState();
       if (options.scroll) {
         els.resultStep.scrollIntoView({
           behavior: REDUCED_MOTION ? "auto" : "smooth",
@@ -1808,10 +2173,12 @@
     } catch (error) {
       if (seq !== state.verifySeq) return;
       state.lastResult = null;
+      state.lastResultParams = null;
       state.chatMessages = [];
       showResultError(error.message || t("result.error"));
       renderAssistantMessages();
       updateAssistantUI();
+      saveAppState();
       if (!options.silent) showToast(t("result.error"));
     } finally {
       if (seq === state.verifySeq) {
@@ -1857,6 +2224,7 @@
     resizeMapAfterTemporalLayout();
     restoreTemporalMapStyle();
     state.lastResult = null;
+    state.lastResultParams = null;
     state.chatMessages = [];
     switchResultView("result");
     setHidden(els.resultLoading, true);
@@ -1955,6 +2323,7 @@
 
   function switchResultView(name) {
     const assistant = name === "assistant";
+    state.activeResultView = assistant ? "assistant" : "result";
     setHidden(els.resultView, assistant);
     setHidden(els.assistantView, !assistant);
     els.resultViewButtons.forEach((button) => {
@@ -1964,6 +2333,7 @@
       button.tabIndex = active ? 0 : -1;
     });
     updateAssistantUI();
+    saveAppState();
   }
 
   function chatContext(result) {
@@ -2141,6 +2511,7 @@
     }
     const text = question.trim().slice(0, 500);
     state.chatMessages.push({ role: "user", text });
+    saveAppState();
     state.chatBusy = true;
     setHidden(els.assistantError, true);
     setHidden(els.assistantLoading, false);
@@ -2171,6 +2542,7 @@
         sources: Array.isArray(response.sources) ? response.sources : [],
         explanationSource: response.explanation_source,
       });
+      saveAppState();
     } catch (error) {
       els.assistantError.textContent = error.status === 503
           ? t("chat.unavailable")
@@ -2181,6 +2553,7 @@
       setHidden(els.assistantLoading, true);
       renderAssistantMessages();
       updateAssistantUI();
+      saveAppState();
     }
   }
 
@@ -2201,6 +2574,7 @@
     message.feedback =
       message.feedback === button.dataset.chatAction ? null : button.dataset.chatAction;
     renderAssistantMessages();
+    saveAppState();
   }
 
   function featureRows(result) {
@@ -3303,6 +3677,7 @@
       els.portfolioEmpty.querySelector("p").textContent = t("portfolio.empty");
       setHidden(els.portfolioEmpty, false);
       updateSortIndicators();
+      saveAppState();
       return;
     }
     if (!rows.length) {
@@ -3311,6 +3686,7 @@
       els.portfolioEmpty.querySelector("p").textContent = t("portfolio.noMatch");
       setHidden(els.portfolioEmpty, false);
       updateSortIndicators();
+      saveAppState();
       return;
     }
 
@@ -3346,6 +3722,7 @@
       )
       .join("");
     updateSortIndicators();
+    saveAppState();
   }
 
   function updateSortIndicators() {
@@ -3373,6 +3750,7 @@
       state.sortDir = key === "score" ? "desc" : "asc";
     }
     renderPortfolio();
+    saveAppState();
   }
 
   function openPortfolioRow(id) {
