@@ -118,3 +118,4 @@ py -3.14 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 - `py -3.14 -m pytest -q`: 107 passed, 2 предупреждения совместимости; `py -3.14 tests\\temporal_playwright.py`: пройдено; `node --check frontend\\app.js`: успешно.
 - Локально установлен только Python 3.14; Python 3.12 не доступен для предварительного запуска CI. Workflow GitHub Actions настроен на 3.12.
 - Первый запуск GitHub Actions на Python 3.12 выявил отсутствующую runtime-зависимость `python-multipart` для CSV upload и две проверки, полагавшиеся на локальные `.env` и `mockups/`. Зависимость добавлена; workflow создаёт случайные неавторизующие значения только для теста гигиены и временную пустую папку `mockups/`, затем удаляет их. Реальные ключи в CI не используются.
+- После исправлений повторный GitHub Actions на Python 3.12 завершился успешно: все 107 тестов прошли.
